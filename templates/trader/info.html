@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="type" content="{{type}}">
+      <meta name="instance_id" content="{{instance_id}}">
+      <title>Cordillera Dashboard</title>
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/css/bootstrap.min.css" integrity="sha384-r4NyP46KrjDleawBgD5tp8Y7UzmLA05oM1iAEQ17CSuDqnUK2+k9luXQOfXJCJ4I" crossorigin="anonymous">
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
+      <link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530be6e374711a8554f31b17e4cb92c25fa5/128/icon/evx.png">
+
+      <style>
+         .sidebar {
+         position: fixed;
+         top: 0;
+         bottom: 0;
+         left: 0;
+         z-index: 100;
+         padding: 90px 0 0;
+         box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+         z-index: 99;
+         }
+         @media (max-width: 767.98px) {
+         .sidebar {
+         top: 11.5rem;
+         padding: 0;
+         }
+         }
+         .navbar {
+         box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .1);
+         }
+         @media (min-width: 767.98px) {
+         .navbar {
+         top: 0;
+         position: sticky;
+         z-index: 999;
+         }
+         }
+         .sidebar .nav-link {
+         color: #333;
+         }
+         .sidebar .nav-link.active {
+         color: #0d6efd;
+         }
+      </style>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+   </head>
+   <body>
+      <nav class="navbar navbar-light bg-light p-3">
+         <div class="d-flex col-12 col-md-3 col-lg-2 mb-2 mb-lg-0 flex-wrap flex-md-nowrap justify-content-between">
+            <a class="navbar-brand" href="#">
+            Cordillera Dashboard
+            </a>
+            <!-- <button class="navbar-toggler d-md-none collapsed mb-3" type="button" data-toggle="collapse" data-target="#sidebar" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">
+               <span class="navbar-toggler-icon"></span>
+               </button> -->
+         </div>
+         <div class="col-12 col-md-5 col-lg-8 d-flex align-items-center justify-content-md-end mt-3 mt-md-0">
+            <div class="mr-3 mt-1">
+            </div>
+            <div class="dropdown">
+               <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-expanded="false">
+               {{user.public_key | truncate(10)}}
+               </button>
+               <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                  <li><a onclick="logout()" class="dropdown-item">Home</a></li>
+               </ul>
+            </div>
+         </div>
+      </nav>
+      <div class="container-fluid">
+         <div class="row">
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+               <div class="position-sticky">
+                  <ul class="nav flex-column">
+                     <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/contracts">
+                        <span class="ml-2">Contracts</span>
+                        </a>
+                     </li>
+                     <!-- <li class="nav-item">
+                        <a class="btn btn-sm btn-primary ml-3 mt-2" href="https://themesberg.com">
+                            Medium
+                        </a>
+                        </li> -->
+                  </ul>
+               </div>
+            </nav>
+            <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4 py-4">
+               <h1 class="h2"><code>#contract_viewer</code></h1>
+               <p>View recent runs and contract information.</p>
+               <div class="container-fluid">
+                  <div class="row">
+                  <div class="col">
+                     <div class="row">
+                        <div class="col">
+                        <div class="container">
+                           <div class="card">
+                              <div class="card-header">Recent Trades</div>
+                              <div class="card-body" id="test-block">
+                                 <p>Submitted transactions can take up to 20 seconds to update when refreshed.</p>
+                                 <br>
+                                 <div class="card">
+                                    <div class="card-header" style="display:flex;justify-content:space-between">
+                                       <span>Operations</span>
+                                       <div class="spinner-border" role="status" id="op_loading"></div>
+                                       <span><button onclick="refresh()" type="button" class="btn btn-primary">Refresh</button></span>
+                                       </div>
+                                       <div class="card-body">
+                                       <div class="table-responsive">
+                                          <pre>
+                                        <table class="table">
+                                           <thead>
+                                              <tr>
+                                                 <th scope="col">operation_id</th>
+                                                 <th scope="col">time</th>
+                                              </tr>
+                                           </thead>
+                                           <tbody id="ca_body">
+                                             
+                                           </tbody>
+                                        </table></pre>
+                                       </div>
+                                    </div>
+                                 </div>
+                                
+                              </div>
+                           </div>
+                           <br>
+
+                        </div>
+                       </div>
+                       <div class="col">
+                        <div class="container">
+                           <div class="card">
+                              <div class="card-header" style="display:flex;justify-content:space-between">
+                                 <span>Recent Logs</span>
+                                 <span><button onclick="get_logs()" type="button" class="btn btn-primary">Refresh</button></span>
+                                 </div>                              <div class="card-body" id="test-block">
+                                 <p>Logs can help debug and provide greater context to transactions.</p>
+                                 <div class="table-responsive">
+                                    <pre>
+                                  <table class="table">
+                                     <thead>
+                                        <tr>
+                                           <th scope="col">log_id</th>
+                                           <th scope="col">time</th>
+                                           <th scope="col">status</th>
+                                           <th scope="col"></th>
+                                        </tr>
+                                     </thead>
+                                     <tbody id="logs_body">
+                                     </tbody>
+                                  </table></pre>
+                                 </div>
+                              </div>
+                           </div>
+                           <br>
+
+                        </div>
+                       </div>
+                     </div>
+                     <br>
+                  </div>
+                  <div class="col">
+                     <div class="row">
+                        <div class="col">
+                           <div class="card">
+                              <h5 class="card-header">Alerts</h5>
+                              <div class="card-body">
+                                    <div    id="ms_alert"></div>
+                                    <div  id="auth_alert"></div>
+                                 
+                                 
+                              </div>
+                           </div>
+                           <br>
+                        </div>
+                        <div class="col">
+                           <div class="container">
+                              <div class="card">
+                                 <h5 class="card-header">Contract <code>{{instance_id}}</code></h5>
+                                 <div class="card-body">
+                                    <h6 >online: <code id="ca_status"> ...</code></h6>
+                                    <h6 >multi-sig: <code id="ms_status"> ...</code></h6>
+                                    <h6 >valid auth: <code id="auth_status"> ...</code></h6>
+                                    <code id="auth_error"></code>
+      
+                                 </div>
+                              </div>
+                              <br>
+                              <div class="card">
+                                 <h5 class="card-header">Actions</h5>
+                                 <div class="card-body">
+                                    <p>
+                                    <button  style="width:100%" class="btn btn-success btn-sm">Run Instance</button>
+                                    </p>
+                                    <p>
+                                    <button style="width:100%" type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#exampleModal">Delete</button>
+                                    </p>
+                                 </div>
+                                 </div>
+                              <br>
+                           </div>
+                        </div>
+                        
+                     </div>
+                     <div class="row">
+                        <div class="container">
+                           <div class="card">
+                              <h5 class="card-header">Config</code></h5>
+                              <div class="card-body">
+                                 <p class="card-text">
+                                    source_account: <code id="source_account">...</code>
+                                    <br>
+                                    source_asset: <code id="source_asset">...</code>
+                                    <br>
+                                    amount: <code id="amount">...</code>
+                                    <br>
+                                    slippage: <code id="slippage">...</code>
+                                    <br>
+                                    memo: <code id="tracker">...</code>
+                                    <br>
+                                    <br>
+                                   
+                                 <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                       <div class="modal-content">
+                                          <div class="modal-header">
+                                             <h5 class="modal-title" id="exampleModalLabel">Delete Confirmation</h5>
+                                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                             <span aria-hidden="true">&times;</span>
+                                             </button>
+                                          </div>
+                                          <div class="modal-body">
+                                             <p>Are you sure that you want to delete this instance? Restoring this instance will require a manual reconfiguration and redeploy.</p>
+                                             <code id="deleteLog">
+                                             </code>
+                                          </div>
+                                          <div class="modal-footer">
+                                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                             <button type="button" class="btn btn-danger" id="deleteButton">Yes, Delete</button>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                                 </p>
+                                 <!-- <p class="card-text text-success">4.6% increase since last month</p> -->
+                              </div>
+                           </div>
+                           <br>
+                        </div>
+                     </div>
+                     
+                     <div class="row h-25 d-inline-block">
+                        <div class="container-fluid">
+                           <div class="card">
+                              <h5 class="card-header">Trade Diversity (%)</h5>
+                              <div class="card-body">
+                                 <h5 class="card-title"></h5>
+                                 <div id="tradesChartDiv">
+                                    <canvas  id="tradesChart" width="100" height="100"></canvas>
+                                 </div>
+                                 <!-- <p class="card-text text-success">4.6% increase since last month</p> -->
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                 
+               </div>
+               </div>
+            </main>
+         </div>
+      </div>
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.1.3/axios.min.js" integrity="sha512-0qU9M9jfqPw6FKkPafM3gy2CBAvUWnYVOfNPDYKVuRTel1PrciTj+a9P3loJB+j0QmN2Y0JYQmkBBS8W+mbezg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+      <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+      <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/js/bootstrap.min.js" integrity="sha384-oesi62hOLfzrys4LxRF63OJCXdXDipiYWBnvTl9Y9/TRlw5xlKIEHpNyvvDShgf/" crossorigin="anonymous"></script>
+      <script src="https://unpkg.com/@albedo-link/intent/lib/albedo.intent.js"></script>
+      <script src="https://unpkg.com/@albedo-link/signature-verification/lib/albedo.signature.verification.js"></script>
+      <script>
+         let pubkey = null
+         let serverkey
+         function logout() {
+             var cookies = document.cookie.split(";");
+         for (var i = 0; i < cookies.length; i++){   
+             var spcook =  cookies[i].split("=");
+             document.cookie = spcook[0] + "=;expires=Thu, 21 Sep 1979 00:00:01 UTC;";                                
+         }
+         window.location.href = '/'
+         
+         }
+         async function ca_isOnline(source_account,source_asset,tracker){
+         source_asset = source_asset.split(':')[0] + "-" + source_asset.split(':')[1] 
+         console.log(`https://api.stellar.expert/explorer/public/payments?asset=${source_asset}&account=${source_account}&memo=${tracker}&limit=1&order=desc`)
+         await axios.get(`https://api.stellar.expert/explorer/public/payments?asset=${source_asset}&account=${source_account}&memo=${tracker}&limit=1&order=desc`).then(
+             function(response){
+                 if(response.data._embedded.records.length == 1){
+                  is_online = (new Date() - new Date(response.data._embedded.records[0].ts))/60000 < 60
+                  if(!is_online){ $("#ca_status").html("false")}}
+                  try{if(is_online){$("#ca_status").html("true")}}
+                  catch{$("#ca_status").html("no_transactions")}
+             }
+         )
+             
+         }
+         $( "#deleteButton" ).click(async function() {
+            var instance_id = $("meta[name='instance_id']").attr("content");  
+            $("#deleteLog").html("Sending delete command...")
+            await axios.get("/api/delete_contract/trader/" + instance_id).then(function(response){
+               if(!response.data.error){
+                  $("#deleteLog").html("Successfully deleted instance, returning to dashboard.")
+                  window.location.href = "/contracts"
+               }
+               else{
+                  $("#deleteLog").html(response.data.error_message)
+
+               }
+            })
+          });
+          function copyServerKey(){
+            navigator.clipboard.writeText(serverkey)
+          }
+
+         function secondsToHms(sec) {
+            sec = Number(sec);
+            var mo = Math.floor(sec / (3600*24*30))
+            var d = Math.floor(sec / (3600*24))
+            var h = Math.floor(sec / 3600);
+            var m = Math.floor(sec % 3600 / 60);
+            var s = Math.floor(sec % 3600 % 60);
+            if(mo>0){
+               if(mo==1){
+                  return mo + " month"
+               }
+               return mo + " months"
+            }
+
+            else if (d>0){
+               if (d==1){
+                  return d + " day"
+               }
+               return d + " days"
+            }
+            else if (h>0){
+               if(h==1){
+                  return h + " hour"
+               }
+               return h + " hours"
+            }
+            else if (m>0){
+               if(m==1){
+                  return m + " minute"
+               }
+               return m + " minutes"
+            }
+            else{
+               if(s==1){
+                  return s + " second"
+               }
+               return s + " seconds"
+            }
+        }
+        
+        let my_instance_data = null
+         async function getData(){
+             var instance_id = $("meta[name='instance_id']").attr("content");  
+             $("#ca_body").empty()
+                 axios.get('/api/info/trader/' + instance_id).then(async function(response){
+                     if(!response.data.error){
+                        my_instance_data = response
+                        serverkey = response.data.server_public
+                        // config card populate
+                        pubkey = response.data.source_account
+                           populate_data(my_instance_data)
+                            }
+
+                        })
+            }
+         async function get_logs(){
+            let log_body = $("#logs_body")
+            var instance_id = $("meta[name='instance_id']").attr("content");  
+            await axios.get('/api/logs/trader/' + instance_id).then(function(response){
+               if(!response.data.error){
+                  response.data.logs.forEach(log => {
+                  log_body.empty()
+                  log_body.append(`
+                  <tr>
+                     <td>${log.id}</td>
+                     <td>${log.id}</td>
+                     <td>${log.id}</td>
+                  </tr>
+                  `)
+                  })
+               }
+            })
+         }
+         async function authorization(){
+            var instance_id = $("meta[name='instance_id']").attr("content");
+            $("#auth_error").empty()  
+         albedo.signMessage({
+            message: instance_id,
+            pubkey : pubkey,
+         })
+            .then(async function(signed){
+               const valid = albedoSignatureVerification.verifyMessageSignature(
+                  pubkey,
+                  instance_id,
+                  signed.message_signature
+               )
+               if(valid){
+                  $("#req_auth").html("<code>Sending authorization to server (Do Not Refresh)</code>")
+                  $("#auth_error").empty()
+                  await axios.post('/api/submit_authorization/trader/' + instance_id,{"authorization" : signed.message_signature} ).then(
+                     function(auth_response){
+                        if(auth_response.data.error){
+                           $("#auth_error").html(auth_response.data.error_message)
+                        }
+                        else{
+                           getData()
+                        }
+                     }
+                  )
+                  getData()
+               }
+               else{
+                  $("#auth_error").html("error: did not sign with source account.")
+               }
+            })
+            .catch(error => {console.log(error.message); $("#auth_error").html("error: " + error.message)})
+         }
+         async function populate_data(response){
+         if(response.data.auth_required){
+            $("#auth_status").html('false')
+            $("#auth_alert").html(
+         `<div  class="alert alert-danger" role="alert" >
+                                       <h6>Authorization has not been signed</h6>
+                                       <p>You have not signed an authorization with the source account. Cordillera uses this authorization to protect against exploits.</p>
+                                       <br><button style='width:100%' class='btn btn-primary btn-sm' onclick='authorization()'>Sign Authorization</button>
+                                    </div>`
+        )
+          
+         }
+         else{
+            $("#auth_status").html('true')
+            $("#auth_alert").html(
+         `<div  class="alert alert-success" role="alert" >
+                                       <h6>Authorization is valid</h6>
+                                       <p>Your authorization has been successfully signed.</p>
+                                    </div>`
+        )           
+         }
+
+         // config 2 card populate
+         $("#source_account").html(response.data.source_account.slice(0,10) + "...")
+         $("#source_asset").html(response.data.source_asset.slice(0,15) + "...")
+         $("#amount").html(response.data.amount + " " + response.data.source_asset.split(':')[0])
+         $("#slippage").html(response.data.slippage + "%")
+         $("#tracker").html(response.data.tracker)
+         let now = new Date()
+         await axios.get(`https://api.stellar.expert/explorer/public/payments?asset=${response.data.source_asset.split(':')[0] + "-" + response.data.source_asset.split(':')[1]}&account=${response.data.source_account}&memo=${response.data.tracker}&limit=10&order=desc`).then(function(response){
+                  response.data._embedded.records.forEach(element => {
+                  $("#ca_body").append(`
+                  <tr>
+                     <td><a style="text-decoration:none;" href="https://lumenscan.io/ops/${element.id}"><code>${element.id}</code></a></td>
+                     <td>${secondsToHms(((now-new Date(element.ts))/1000).toFixed(0))} ago</td>
+                  </tr>
+                  `)
+               })
+               
+         })
+         await axios.get('https://horizon.stellar.org/accounts/' + response.data.source_account).then(function(resp){
+            var has_mult = false
+            if(typeof resp.data.signers === "object"){
+               resp.data.signers.forEach(signer => {
+                  if(response.data.server_public === signer.key){
+                     if (signer.weight >= resp.data.thresholds.med_threshold){
+                        has_mult = true
+                     }
+                     else{
+                        has_mult = "signer_weight_too_low"
+                     }
+                  }
+               })
+            }
+            console.log(has_mult)
+            if(has_mult){
+               $("#ms_status").html('true')
+               $("#ms_alert").html(`
+        <div  class="alert alert-success" role="alert">
+                                       <h6>Multi-Sig enabled</h6>
+                                       <p>You've successfully activated multi-sig access for Cordillera.</p>
+                                     </div> 
+        `)
+
+            }
+            if(!has_mult){
+               $("#ms_status").html('false')
+               $("#ms_alert").html(`
+        <div  class="alert alert-danger" role="alert">
+                                       <h6>Multi-Sig not enabled</h6>
+                                       <p>Cordillera uses multi-sig to issue transactions on behalf of the source account. Click to copy the server's key <a href="#" onclick="copyServerKey()" class="alert-link">copy</a>, then add it as a signer with medium permissions.</p>
+                                     </div> 
+        `)
+             
+            }
+            if(has_mult === "signer_weight_too_low"){
+               $("#ms_status").html("signer_weight_too_low")
+               $("#ms_alert").html(`
+        <div  class="alert alert-danger" role="alert">
+                                       <h6>Signer Weight too low</h6>
+                                       <p>The signer weight for the server key is too low to enable medium operations.</p>
+                                     </div> 
+        `)
+            }
+            
+         })
+         labels = []
+         data = []
+         response.data.trades.forEach(trade => {
+               labels.push(
+                  trade.asset.split(':')[0]
+               )
+               data.push(trade.percent)
+         })
+         
+         
+            await ca_isOnline(response.data.source_account,response.data.source_asset,response.data.tracker)
+            $("#op_loading").hide()
+         
+            var ctx = document.getElementById("tradesChart"); 
+            console.log(ctx.width)
+            if (ctx.width == 100){
+         var myChart = new Chart(ctx, {
+               type: 'doughnut',
+               data: {
+                  labels: labels,
+                  datasets: [{
+                  label: 'Trade Diversity',
+                  data: data,
+                  backgroundColor: [
+                     'rgba(255, 99, 132, 0.5)',
+                     'rgba(54, 162, 235, 0.2)',
+                     'rgba(255, 206, 86, 0.2)',
+                     'rgba(75, 192, 192, 0.2)'
+                  ],
+                  borderColor: [
+                     'rgba(255,99,132,1)',
+                     'rgba(54, 162, 235, 1)',
+                     'rgba(255, 206, 86, 1)',
+                     'rgba(75, 192, 192, 1)'
+                  ],
+                  borderWidth: 1
+                  }]
+               },
+               options: {
+               }
+               });}
+
+         }
+         async function refresh(){
+            $("#op_loading").show()
+            $("#source_account").html("...")
+            $("#source_asset").html("...")
+            $("#amount").html("...")
+            $("#ca_status").html("...")
+            $("#ca_body").empty()
+            $("#ms_status").html("...")
+            await populate_data(my_instance_data)
+         }
+         var type = $("meta[name='type']").attr("content");  
+         
+         $(document).ready(async function(){
+            await getData()
+            $("#op_loading").hide()
+          
+      
+            
+         })
+         function gete(){
+            console.log(my_instance_data)
+         }
+      </script>
+   </body>
+</html>

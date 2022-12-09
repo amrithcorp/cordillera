@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta name="type" content="{{type}}">
+   <meta name="instance_id" content="{{instance_id}}">
+   <title>Cordillera Dashboard</title>
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/css/bootstrap.min.css"
+      integrity="sha384-r4NyP46KrjDleawBgD5tp8Y7UzmLA05oM1iAEQ17CSuDqnUK2+k9luXQOfXJCJ4I" crossorigin="anonymous">
+   <link rel="stylesheet" href="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
+   <link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1a63530be6e374711a8554f31b17e4cb92c25fa5/128/icon/evx.png">
+
+   <style>
+      .sidebar {
+         position: fixed;
+         top: 0;
+         bottom: 0;
+         left: 0;
+         z-index: 100;
+         padding: 90px 0 0;
+         box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+         z-index: 99;
+      }
+
+      @media (max-width: 767.98px) {
+         .sidebar {
+            top: 11.5rem;
+            padding: 0;
+         }
+      }
+
+      .navbar {
+         box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .1);
+      }
+
+      @media (min-width: 767.98px) {
+         .navbar {
+            top: 0;
+            position: sticky;
+            z-index: 999;
+         }
+      }
+
+      .sidebar .nav-link {
+         color: #333;
+      }
+
+      .sidebar .nav-link.active {
+         color: #0d6efd;
+      }
+   </style>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+</head>
+
+<body>
+   <nav class="navbar navbar-light bg-light p-3">
+      <div class="d-flex col-12 col-md-3 col-lg-2 mb-2 mb-lg-0 flex-wrap flex-md-nowrap justify-content-between">
+         <a class="navbar-brand" href="#">
+            Cordillera Dashboard
+         </a>
+         <!-- <button class="navbar-toggler d-md-none collapsed mb-3" type="button" data-toggle="collapse" data-target="#sidebar" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">
+               <span class="navbar-toggler-icon"></span>
+               </button> -->
+      </div>
+      <div class="col-12 col-md-5 col-lg-8 d-flex align-items-center justify-content-md-end mt-3 mt-md-0">
+         <div class="mr-3 mt-1">
+         </div>
+         <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton"
+               data-toggle="dropdown" aria-expanded="false">
+               {{user.public_key | truncate(10)}}
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+               <li><a onclick="logout()" class="dropdown-item">Home</a></li>
+            </ul>
+         </div>
+      </div>
+   </nav>
+   <div class="container-fluid">
+      <div class="row">
+         <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky">
+               <ul class="nav flex-column">
+                  <li class="nav-item">
+                     <a class="nav-link active" aria-current="page" href="/contracts">
+                        <span class="ml-2">Contracts</span>
+                     </a>
+                  </li>
+                  <!-- <li class="nav-item">
+                        <a class="btn btn-sm btn-primary ml-3 mt-2" href="https://themesberg.com">
+                            Medium
+                        </a>
+                        </li> -->
+               </ul>
+            </div>
+         </nav>
+         <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4 py-4">
+            <h1 class="h2"><code>#new_trader_contract</code></h1>
+            <p>Create and configure a new trader instance.</p>
+            <div class="container">
+               <div class="row">
+                  <div class="col-sm">
+                     <div class="card">
+                        <div class="card-header">
+                           Create a new trader contract
+                        </div>
+                        <div class="card-body" style="text-align:center; ">
+                           <samp>
+                              Make sure to only input valid addresses that you control!
+                              Cordillera requires full multi-sig access over the source account to make trades on it's behalf.
+                              Make sure the operation fee is large enough.
+                           </samp>
+                           <br><br>
+                           <div id="submit><button type="button" class="btn btn-primary btn-sm" onclick="export_inputs()">submit</button></div>
+                           <br>
+                           <code id="error"></code>
+                        </div>
+                     </div><br>
+                  </div>
+                  <div class="col-sm">
+                     <div class="card">
+                        <div class="card-body">
+
+                           <div class="mb-3">
+                              <label for="sourceAccount" class="form-label">Source Account <small style="color:grey;">(will require multi-sig access)</small></label>
+                              <input type="text" class="form-control" id="sourceAccount" placeholder="GCEXAMPLE5HWNK4...">
+                            </div>
+                            <div class="mb-3">
+                              <label for="sourceAsset" class="form-label">Source Asset</label>
+                              <input type="text" class="form-control" id="sourceAsset" placeholder="AQUA:GBNZILSTVQZ4...">
+                            </div>
+                            <div class="mb-3">
+                              <label for="sendTo" class="form-label">Send Traded Assets</label>
+                              <input type="text" class="form-control" id="sendTo" placeholder="GCEXAMPLE5HWNK4...">
+                            </div>
+                  
+                        </div>
+                     </div>
+                     <br>
+                  </div>
+                  <div class="container-fluid">
+                     <div class="card">
+                        <div class="card-header">
+                           <div class="form-check">
+                              <input type="checkbox" class="form-check-input" id="amountAll">
+                              <label class="form-check-label" for="amountAll">Trade total balance?</label>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                           <div class="row">
+                              <div class="col-sm">
+                                 <input id="amountPerHour" type="text" class="form-control" placeholder="Amount Per Hour">
+                                 <br>
+                              </div>
+                              <div class="col-sm">
+                                 <input id="opFee" type="text" class="form-control" placeholder="Operation Fee">
+                                 <br>
+                              </div>
+                              <div class="col-sm">
+                                 <div class="input-group mb-2 mr-sm-2">
+                              
+                                    <input id="maxSlippage" type="text" class="form-control" placeholder="Max Slippage">
+                                    <div class="input-group-prepend">
+                                       <div class="input-group-text">%</div>
+                                     </div>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+               
+                  <br>
+                  
+                  </div>
+               </div>
+               <div class="card">
+                  <div class="card-header">Configure Trades <small>( <bold id="rowsCount">1</bold> / 10 )</small><br><code id="status"></code>
+                  </div>
+                  <div class="card-body">
+                     <button class="btn btn-primary btn-sm" onclick="makeRow()">New Trade</button> 
+                     <br>
+                     <br>
+                     <table class="table">
+                        <thead>
+                           <tr>
+                              <th scope="col">Asset</th>
+                              <th scope="col">Percent</th>
+                              <th></th>
+                           </tr>
+                        </thead>
+                        <tbody id="tradesBody">
+                           <tr id="1">
+                              <td><input name="assets" type="text" class="form-control" style="width:100%"  id="asset-1" placeholder="AQUA:GBNZILSTVQZ4"></td>
+                              <td><input name="percents" style="width:100px" type="number" step="1" class="form-control" id="percent-1" placeholder="30"></td>
+                              <td><button class="btn btn-primary btn-sm" onclick="removeRow('1')">remove</button></td>
+                           </tr>
+                        </tbody>
+                     </table>
+                  </div>
+               </div>
+               <br>
+
+            </div>
+               
+               
+         </main>
+      </div>
+   </div>
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.1.3/axios.min.js"
+      integrity="sha512-0qU9M9jfqPw6FKkPafM3gy2CBAvUWnYVOfNPDYKVuRTel1PrciTj+a9P3loJB+j0QmN2Y0JYQmkBBS8W+mbezg=="
+      crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+      crossorigin="anonymous"></script>
+      <script src="https://unpkg.com/@albedo-link/intent/lib/albedo.intent.js"></script>
+   <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/js/bootstrap.min.js"
+      integrity="sha384-oesi62hOLfzrys4LxRF63OJCXdXDipiYWBnvTl9Y9/TRlw5xlKIEHpNyvvDShgf/"
+      crossorigin="anonymous"></script>
+   <script>
+      $(document).ready(function(){
+         $("#sourceAccount").val('')
+         $("#sourceAsset").val('')
+         $("#sendTo").val('')
+         $("#amountPerHour").val('')
+         $("#opFee").val('')
+         $("#maxSlippage").val('')
+         $("#amountAll").prop('checked',false)
+      })         
+      function logout() {
+         var cookies = document.cookie.split(";");
+         for (var i = 0; i < cookies.length; i++) {
+            var spcook = cookies[i].split("=");
+            document.cookie = spcook[0] + "=;expires=Thu, 21 Sep 1979 00:00:01 UTC;";
+         }
+         window.location.href = '/'
+
+      }
+      $("#amountAll").click(function(){
+         var field = $("#amountPerHour")
+         if(this.checked){
+            field.val("")
+            field.prop('disabled',true)
+         }
+         else{
+            field.prop('disabled',false)
+         }
+      })
+      function makeid(length) {
+         var result           = '';
+         var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+         var charactersLength = characters.length;
+         for ( var i = 0; i < length; i++ ) {
+             result += characters.charAt(Math.floor(Math.random() * charactersLength));
+         }
+         return result;
+     }
+     
+      let trades = ["1"]
+      function makeRow(){
+      if (trades.length < 10){
+         var id = makeid(6)
+         trades.push(id)
+         $("#tradesBody").append(`
+         <tr id=${id}>
+            <td><input name="assets" type="text" class="form-control" style="width:100%"  id="asset-${id}" placeholder="AQUA:GBNZILSTVQZ4"></td>
+            <td><input name="percents" style="width:100px" type="number" step="1" class="form-control" id="percent-${id}" placeholder="30"></td>
+            <td><button class="btn btn-primary btn-sm" onclick="removeRow('${id}')">remove</button></td>
+         </tr>
+         `)
+         $("#rowsCount").html(trades.length)
+      }
+      else{
+         $("#status").html("Maximum trades reached!")
+      }
+   }
+      function removeRow(id){
+         $("#status").html("")
+         trades.splice(trades.indexOf(id), 1);
+         $("#" + id).remove()
+         $("#rowsCount").html(trades.length)
+      }
+  async function export_inputs(){
+      amount = null
+      if($("#amountAll").is(':checked')){
+         amount = "all"
+      }
+      else{
+         amount = Number($("#amountPerHour").val())
+      }
+      let tradesList = []
+      trades.forEach(trade => {
+         tradesList.push({
+            asset : $(`#asset-${trade}`).val(),
+            percent : Number($(`#percent-${trade}`).val())
+         })
+      })
+      response = {
+         source_account : $("#sourceAccount").val(),
+         source_asset : $("#sourceAsset").val(),
+         send_to : $("#sendTo").val(),
+         amount : amount,
+         op_fee :Number( $("#opFee").val()),
+         max_slippage : Number($("#maxSlippage").val()),
+         trades : tradesList
+      }
+      console.log(response)
+      var check = check_response(response)
+      if(check.valid){
+         await axios.post('/api/create_contract/trader',response).then(function(response){
+            console.log(response.data)
+            if(!response.data.error){
+               window.location.href="/contracts/trader/" + response.data.instance_id
+            }
+            else{
+               $("error").html(response.data.error_message)
+            }
+         })
+      }
+   }
+   function check_response(response){
+      check = {
+         valid : true,
+         error : null
+      }
+      let total_percent = 0
+      response.trades.forEach(trade => {
+         total_percent += Number(trade.percent)
+      })
+      if(response.source_account.length != 56 || response.source_account[0] != "G"){
+         check.valid = false
+         check.error = "bad_source_account"
+      }
+      else if(response.source_asset.length > 68 || response.source_asset.length < 57 || response.source_asset.split(":").length != 2){
+         check.valid = false
+         check.error = "bad_source_asset"
+      }
+      else if(response.send_to.length != 56 || response.send_to[0] != "G"){
+         check.valid = false
+         check.error = "bad_send_to"
+      }
+      else if(response.op_fee === "" || isNaN(Number(response.op_fee))){
+         check.valid = false
+         check.error = "bad_op_fee"
+      }
+      else if((response.amount != "all" && isNaN(Number(response.amount))) || response.amount === ""){
+         check.valid = false
+         check.error = "bad_amount"
+      }
+      
+      else if(response.max_slippage === "" || isNaN(Number(response.max_slippage))){
+         check.valid = false
+         check.error = "bad_max_slippage"
+      }
+      else if(total_percent != 100){
+         check.valid = false
+         check.error = "percent_not_100"
+      }
+      else if(response.trades.length > 10){
+         check.valid = false
+         check.error = "too_many_trades"
+      }
+      else{
+         response.trades.forEach(trade => {
+            if(trade.asset.length > 68 || trade.asset.length < 57 || trade.asset.split(":").length != 2){
+               check.valid = false
+               check.error = "bad_traded_asset"
+            }
+         })
+      }
+      if(!check.valid){
+         $("#error").html("error: " + check.error)
+      }
+      if(check.valid){
+         $("#error").html("Building Contract...")
+         $("#submit").hide()
+      }
+      return check
+   }
+
+   </script>
+</body>
+
+</html>
