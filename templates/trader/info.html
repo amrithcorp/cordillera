@@ -609,6 +609,7 @@
                else{
                   $("#running").empty()
                   $("#run_error").html("redirecting to runtime now...")
+                  window.location.href = "/logs/trader/" + response.data.log_lookup
                }
             })
          }

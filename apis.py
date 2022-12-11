@@ -87,13 +87,16 @@ def get_trader_logs(instance_id):
         if not instance == None and instance.owner_id == user.id:
             logs = []
             now = datetime.datetime.utcnow()
+            count = 0
             for log in instance.logs:
-                logs.append({
-                    "error" : log.error,
-                    "running" : log.running,
-                    "id" : log.log_lookup,
-                    "log_time" : (now - log.time).total_seconds()
-                })
+                if count == 10: break
+                else:
+                    logs.append({
+                        "error" : log.error,
+                        "running" : log.running,
+                        "id" : log.log_lookup,
+                        "log_time" : (now - log.time).total_seconds()
+                    })
             return js({
                 "error" : False,
                 "logs" : sorted(logs, key=lambda i: i['log_time'])
@@ -135,6 +138,17 @@ def trader_log(log_id):
         return js({"error" : True, "error_message" : auth['error_message']})    
     else:
         user = User.query.filter_by(public_key = auth['key']).first()
+        log = Costaverage_logs.query.filter_by(log_lookup = log_id).first()
+        if log != None and user.id == log.contract.owner_id:
+            return js({
+                "error" : False,
+                
+            })
+        else:
+            return js({
+                "error" : True,
+                "error_message" : "no_resource"
+            })
 
 @app.route('/api/create_run/trader/<instance_id>')
 def trader_run(instance_id):
@@ -157,7 +171,7 @@ def trader_run(instance_id):
                 )
                 db.session.add(new_run)
                 db.session.commit()
-                return js({"error" : False, "error_message" : new_run.log_lookup})
+                return js({"error" : False, "log_lookup" : new_run.log_lookup})
         else:
             return js({"error" : True, "error_message" : "no_resource"})
 

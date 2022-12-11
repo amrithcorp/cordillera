@@ -2,7 +2,7 @@ from app import app
 from flask import render_template,jsonify,redirect,url_for
 from functions import build_challenge,verify_challenge,authorize
 from stellar_sdk import Keypair
-from models import db,User,Costaverage
+from models import db,User,Costaverage,Costaverage_logs
 
 
 @app.route('/')
@@ -59,3 +59,16 @@ def new_trader():
             'trader/new.html',
             user=user
             )
+
+@app.route('/logs/trader/<log_lookup>')
+def log_view(log_lookup):
+    auth = authorize()
+    if auth['error']:
+        return render_template('error.html',message=auth['error_message'])
+    else:
+        user = User.query.filter_by(public_key = auth['key']).first()
+        log = Costaverage_logs.query.filter_by(log_lookup = log_lookup).first()
+        if log.contract.owner_id == user.id:
+            return log_lookup
+        else:
+            return render_template('error.html',message=auth['error_message'])
