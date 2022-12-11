@@ -2,8 +2,10 @@ from app import app,other_config
 from flask import render_template, jsonify as js, request
 from functions import verify_authorization,verify_challenge, build_challenge,authorize,ca_check
 from flask_cors import cross_origin
-from models import User,Costaverage,db,Costaverage_trades
+from models import User,Costaverage,db,Costaverage_trades,Costaverage_logs
 from secrets import token_hex
+import json
+import secrets
 
 @cross_origin
 @app.route('/api/build_challenge_tx/<address>')
@@ -56,6 +58,7 @@ def get_trader_info(instance_lookup):
                 })
             return js({
                 "error" : False,
+                "running" : instance.running,
                 "server_public" : other_config['worker_public_key'],
                 "source_account" : instance.source_account,
                 "source_asset" : instance.source_asset,
@@ -72,7 +75,7 @@ def get_trader_info(instance_lookup):
             })
         else:
             return js({"error" : True, "error_message" : "no_resource"}) 
-
+import datetime
 @app.route('/api/logs/trader/<instance_id>')
 def get_trader_logs(instance_id):
     auth = authorize()
@@ -83,16 +86,17 @@ def get_trader_logs(instance_id):
         instance = Costaverage.query.filter_by(instance_lookup=instance_id).first()
         if not instance == None and instance.owner_id == user.id:
             logs = []
+            now = datetime.datetime.utcnow()
             for log in instance.logs:
                 logs.append({
                     "error" : log.error,
-                    "output" : log.output,
                     "running" : log.running,
-                    "id" : log.log_lookup
+                    "id" : log.log_lookup,
+                    "log_time" : (now - log.time).total_seconds()
                 })
             return js({
                 "error" : False,
-                "logs" : logs
+                "logs" : sorted(logs, key=lambda i: i['log_time'])
             })
         else:
             return js({
@@ -123,6 +127,39 @@ def delete_trader(instance_id):
                 "error" : True,
                 "error_message" : "bad_auth"
             })
+
+@app.route('/api/log/trader/<log_id>')
+def trader_log(log_id):
+    auth = authorize()
+    if auth['error']:
+        return js({"error" : True, "error_message" : auth['error_message']})    
+    else:
+        user = User.query.filter_by(public_key = auth['key']).first()
+
+@app.route('/api/create_run/trader/<instance_id>')
+def trader_run(instance_id):
+    auth = authorize()
+    if auth['error']:
+        return js({"error" : True, "error_message" : auth['error_message']})    
+    else:
+        user = User.query.filter_by(public_key = auth['key']).first()
+        instance = Costaverage.query.filter_by(instance_lookup=instance_id).first()
+        if instance != None and user.id == instance.owner_id:
+            if instance.running:
+                return js({"error" : True, "error_message" : "instance_already_running"})
+            else:
+                instance.running = True
+                new_run = Costaverage_logs(
+                    log_lookup = secrets.token_hex(10),
+                    running = True,
+                    time = datetime.datetime.utcnow(),
+                    contract = instance
+                )
+                db.session.add(new_run)
+                db.session.commit()
+                return js({"error" : False, "error_message" : new_run.log_lookup})
+        else:
+            return js({"error" : True, "error_message" : "no_resource"})
 
 @app.route('/api/submit_authorization/trader/<instance_id>',methods=['GET','POST'])
 def trader_authorization(instance_id):

@@ -136,8 +136,10 @@
                            <div class="card">
                               <div class="card-header" style="display:flex;justify-content:space-between">
                                  <span>Recent Logs</span>
+                                 <div class="spinner-border" role="status" id="logs_loading"></div>
                                  <span><button onclick="get_logs()" type="button" class="btn btn-primary">Refresh</button></span>
-                                 </div>                              <div class="card-body" id="test-block">
+                                 </div>
+                              <div class="card-body" id="test-block">
                                  <p>Logs can help debug and provide greater context to transactions.</p>
                                  <div class="table-responsive">
                                     <pre>
@@ -193,12 +195,13 @@
                               <div class="card">
                                  <h5 class="card-header">Actions</h5>
                                  <div class="card-body">
-                                    <p>
-                                    <button  style="width:100%" class="btn btn-success btn-sm">Run Instance</button>
-                                    </p>
-                                    <p>
-                                    <button style="width:100%" type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#exampleModal">Delete</button>
-                                    </p>
+                                    <div class="container-fluid" id="running" style="text-align: center;display:flex;justify-content:space-between">
+                                             <button id="run_button" style="width:48%" class="btn btn-success btn-sm" onclick="run()">Run Instance</button>
+                                             <button id="delete_button" style="width:48%" type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#exampleModal">Delete</button>
+                                    </div>
+                                    <code id="run_error"></code>
+                                   
+                                 
                                  </div>
                                  </div>
                               <br>
@@ -380,22 +383,32 @@
                         })
             }
          async function get_logs(){
+            $("#logs_loading").show()
             let log_body = $("#logs_body")
             var instance_id = $("meta[name='instance_id']").attr("content");  
+            let now = new Date()
             await axios.get('/api/logs/trader/' + instance_id).then(function(response){
                if(!response.data.error){
-                  response.data.logs.forEach(log => {
                   log_body.empty()
+                  response.data.logs.forEach(log => {
+                  status = "success"
+                  if(log.running){
+                     status = "running"
+                  }
+                  else if(log.error){
+                     status = "failed"
+                  }
                   log_body.append(`
                   <tr>
-                     <td>${log.id}</td>
-                     <td>${log.id}</td>
-                     <td>${log.id}</td>
+                     <td><a style="text-decoration:none;"  href="/logs/trader/${log.id}">${log.id}</a></td>
+                     <td>${secondsToHms(log.log_time)} ago</td>
+                     <td>${status}</td>
                   </tr>
                   `)
                   })
                }
             })
+            $("#logs_loading").hide()
          }
          async function authorization(){
             var instance_id = $("meta[name='instance_id']").attr("content");
@@ -569,19 +582,37 @@
             $("#ca_body").empty()
             $("#ms_status").html("...")
             await populate_data(my_instance_data)
+
          }
          var type = $("meta[name='type']").attr("content");  
          
          $(document).ready(async function(){
             await getData()
             $("#op_loading").hide()
-          
+            $("#logs_loading").hide()
+            await get_logs()
       
             
          })
-         function gete(){
-            console.log(my_instance_data)
+         async function run(){
+            var instance_id = $("meta[name='instance_id']").attr("content");  
+
+            $("#running").html(`
+            <div class="spinner-border" role="status">
+            <span class="sr-only">Loading...</span>
+            </div>`)      
+            await axios.get("/api/create_run/trader/" + instance_id).then(function(response){
+               if(response.data.error){
+                  $("#run_error").html("error: " + response.data.error_message)
+                  $("#running").empty()
+               }
+               else{
+                  $("#running").empty()
+                  $("#run_error").html("redirecting to runtime now...")
+               }
+            })
          }
+
       </script>
    </body>
 </html>

@@ -362,65 +362,45 @@ from models import (
 import json
 import secrets
 
-def run(instance_id):
-    instance = session.query(Costaverage).filter_by(instance_lookup=instance_id).one_or_none()
-    if instance != None:
-        if not instance.running:
-            trades = []
-            for trade in instance.trades:
-                trades.append(
-                    {
-                        "code" : trade.asset.split(':')[0],
-                        "issuer" : trade.asset.split(':')[1],
-                        "percent" : trade.percent
-                    }
+def run(run_id):
+    run = session.query(Costaverage_logs).filter_by(log_lookup=run_id).one_or_none()
+    if run != None:
+        trades = []
+        for trade in run.contract.trades:
+            trades.append(
+                {
+                    "code" : trade.asset.split(':')[0],
+                    "issuer" : trade.asset.split(':')[1],
+                    "percent" : trade.percent
+                }
+            )
+        config = {
+            "source_account" : run.contract.source_account,
+            "send_to" : run.contract.send_to,
+            "op_fee" : run.contract.fee,
+            "memo" : run.contract.memo,
+            "max_slippage" : run.contract.max_slippage,
+            "source_asset" : {
+                "code" : run.contract.source_asset.split(":")[0],
+                "issuer" : run.contract.source_asset.split(":")[1],
+                "amount_per_hour" : (
+                    "all" if run.contract.amount_all else run.contract.amount
                 )
-            config = {
-                "source_account" : instance.source_account,
-                "send_to" : instance.send_to,
-                "op_fee" : instance.fee,
-                "memo" : instance.memo,
-                "max_slippage" : instance.max_slippage,
-                "source_asset" : {
-                    "code" : instance.source_asset.split(":")[0],
-                    "issuer" : instance.source_asset.split(":")[1],
-                    "amount_per_hour" : (
-                        "all" if instance.amount_all else instance.amount
-                    )
-                },
-                "trades" : trades
-            }
-            log = Costaverage_logs(
-                contract = instance,
-                running = True,
-                log_lookup = secrets.token_hex(10)
-            )
-            instance.running = True
-            session.add(log)
-            session.commit()
-            run = script(config)
-            print(run)
-            if run['error']:
-                log.error = True
-                log.output = run['msg']
-            else:
-                log.error = False
-                log.output = json.dumps({
-                    "transaction_hash" : run['transaction_hash'],
-                    "trades" : run['trades']
-                })
-            log.running = False
-            instance.running = False
-            session.commit()
+            },
+            "trades" : trades
+        }
+        
+        run_instance = script(config)
+        print(run_instance)
+        if run_instance['error']:
+            run.error = True
+            run.output = run_instance['msg']
         else:
-            log = Costaverage_logs(
-                contract = instance,
-                running = False,
-                error = True,
-                output = "instance_already_running"
-            )
-            session.add(log)
-            instance.running = False
-            session.commit()
+            run.error = False
+            run.output = json.dumps(run_instance)
+        run.running = False
+        run.contract.running = False
+        session.commit()
+
     
-run("695f2d5213687b8b087f")
+run("e2020c9398cefa6f67df")
