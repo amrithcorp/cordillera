@@ -65,3 +65,4 @@ class Costaverage_logs(Base):
     running = Column(Boolean)
     output = Column(Text)
     time = Column(DateTime)
+    end_time = Column(DateTime)

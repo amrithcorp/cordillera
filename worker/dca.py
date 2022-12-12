@@ -133,12 +133,12 @@ def has_all_trustlines(send_to_account,trades):
     }
 
 def get_best_path(send_asset, to_asset,amount,config):
-    if amount == 0:
+    amount=str(round(amount,7))
+    if amount == "0.0":
         return {
             "error" : True,
             "msg" : "amount_zero"
         }
-    amount=str(round(amount,7))
     r = server.strict_send_paths(
         source_asset=Asset(send_asset['code'],send_asset['issuer']),
         source_amount=amount,
@@ -212,7 +212,7 @@ def send_trades(trades,config,server_secret):
     if op_count == 0:
         return {
             "error" : True,
-            "msg" : "no_ops"
+            "msg" : "no_balance"
         }
     else:
         completed = transaction.build()
@@ -323,13 +323,7 @@ def script(config):
                                 )
                             })
                     trade_transaction = send_trades(tradeList,config,server_secret)
-                    if trade_transaction['error'] and trade_transaction['msg'] == 'horizon_error': 
-                        return {
-                            "error" : True,
-                            "msg" : "horizon_error",
-                            "context" : trade_transaction
-                        }
-                    elif trade_transaction['error'] and trade_transaction['msg'] != "horizon_error":
+                    if trade_transaction['error']:
                         return trade_transaction
                     else:
                         for trade in tradeList:
@@ -339,6 +333,20 @@ def script(config):
                             "transaction_hash" : trade_transaction['transaction_hash'],
                             "trades" : tradeList
                         })
+def verify_authorization(instance_id,source_account,authorization):
+    keypair = Keypair.from_public_key(source_account)
+    signed_message = (source_account + ":" + instance_id)
+    hashed_message = hashlib.sha256(signed_message.encode('utf-8')).digest()
+    try:
+        keypair.verify(hashed_message,bytes.fromhex(authorization))
+        return {
+        "error" : False
+        }
+    except:
+        return {
+            "error" : True,
+            "error_message" : "bad_authorization"
+        }
 
 
 
@@ -365,42 +373,52 @@ import secrets
 def run(run_id):
     run = session.query(Costaverage_logs).filter_by(log_lookup=run_id).one_or_none()
     if run != None:
-        trades = []
-        for trade in run.contract.trades:
-            trades.append(
-                {
-                    "code" : trade.asset.split(':')[0],
-                    "issuer" : trade.asset.split(':')[1],
-                    "percent" : trade.percent
-                }
-            )
-        config = {
-            "source_account" : run.contract.source_account,
-            "send_to" : run.contract.send_to,
-            "op_fee" : run.contract.fee,
-            "memo" : run.contract.memo,
-            "max_slippage" : run.contract.max_slippage,
-            "source_asset" : {
-                "code" : run.contract.source_asset.split(":")[0],
-                "issuer" : run.contract.source_asset.split(":")[1],
-                "amount_per_hour" : (
-                    "all" if run.contract.amount_all else run.contract.amount
-                )
-            },
-            "trades" : trades
-        }
-        
-        run_instance = script(config)
-        print(run_instance)
-        if run_instance['error']:
+        is_authorized = verify_authorization(
+            run.contract.instance_lookup,
+            run.contract.source_account,
+            run.contract.authorization
+        )
+        if is_authorized['error']:
             run.error = True
-            run.output = run_instance['msg']
+            run.output = "bad_authorization"
+            run.running = False
         else:
-            run.error = False
-            run.output = json.dumps(run_instance)
+            trades = []
+            for trade in run.contract.trades:
+                trades.append(
+                    {
+                        "code" : trade.asset.split(':')[0],
+                        "issuer" : trade.asset.split(':')[1],
+                        "percent" : trade.percent
+                    }
+                )
+            config = {
+                "source_account" : run.contract.source_account,
+                "send_to" : run.contract.send_to,
+                "op_fee" : run.contract.fee,
+                "memo" : run.contract.memo,
+                "max_slippage" : run.contract.max_slippage,
+                "source_asset" : {
+                    "code" : run.contract.source_asset.split(":")[0],
+                    "issuer" : run.contract.source_asset.split(":")[1],
+                    "amount_per_hour" : (
+                        "all" if run.contract.amount_all else run.contract.amount
+                    )
+                },
+                "trades" : trades
+            }
+            run_instance = script(config)
+            print(run_instance)
+            if run_instance['error']:
+                run.error = True
+                run.output = run_instance['msg']
+            else:
+                run.error = False
+                run.output = json.dumps(run_instance)
         run.running = False
-        run.contract.running = False
-        session.commit()
+    run.end_time = datetime.datetime.utcnow()
+    run.contract.running = False
+    session.commit()
 
     
-run("ebc01520286ba6a2bd35")
+x = run("a6d1384dfea419c50d00")

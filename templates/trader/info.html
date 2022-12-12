@@ -99,7 +99,7 @@
                            <div class="card">
                               <div class="card-header">Recent Trades</div>
                               <div class="card-body" id="test-block">
-                                 <p>Submitted transactions can take up to 20 seconds to update when refreshed.</p>
+                                 <p>Submitted transactions can take up to a minute to update when refreshed.</p>
                                  <br>
                                  <div class="card">
                                     <div class="card-header" style="display:flex;justify-content:space-between">
@@ -198,9 +198,11 @@
                                     <div class="container-fluid" id="running" style="text-align: center;display:flex;justify-content:space-between">
                                              <button id="run_button" style="width:48%" class="btn btn-success btn-sm" onclick="run()">Run Instance</button>
                                              <button id="delete_button" style="width:48%" type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#exampleModal">Delete</button>
+                                             
                                     </div>
-                                    <code id="run_error"></code>
-                                   
+                                   <br>
+                                   <code id="run_error"></code>
+
                                  
                                  </div>
                                  </div>
@@ -392,6 +394,7 @@
                   log_body.empty()
                   response.data.logs.forEach(log => {
                   status = "success"
+                  console.log(log)
                   if(log.running){
                      status = "running"
                   }
@@ -581,6 +584,8 @@
             $("#ca_status").html("...")
             $("#ca_body").empty()
             $("#ms_status").html("...")
+            $("#running").html(`  <button id="run_button" style="width:48%" class="btn btn-success btn-sm" onclick="run()">Run Instance</button>
+                                             <button id="delete_button" style="width:48%" type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#exampleModal">Delete</button>`)
             await populate_data(my_instance_data)
 
          }

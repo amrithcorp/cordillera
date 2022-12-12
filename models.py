@@ -40,3 +40,4 @@ class Costaverage_logs(db.Model):
     running = db.Column(db.Boolean)
     output = db.Column(db.Text)
     time = db.Column(db.DateTime)
+    end_time = db.Column(db.DateTime)

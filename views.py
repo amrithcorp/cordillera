@@ -69,6 +69,11 @@ def log_view(log_lookup):
         user = User.query.filter_by(public_key = auth['key']).first()
         log = Costaverage_logs.query.filter_by(log_lookup = log_lookup).first()
         if log.contract.owner_id == user.id:
-            return log_lookup
+            return render_template(
+                '/trader/log.html',
+                user=user,
+                log=log
+                
+                )
         else:
-            return render_template('error.html',message=auth['error_message'])
+            return render_template('error.html',message="no_resource")

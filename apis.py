@@ -140,8 +140,19 @@ def trader_log(log_id):
         user = User.query.filter_by(public_key = auth['key']).first()
         log = Costaverage_logs.query.filter_by(log_lookup = log_id).first()
         if log != None and user.id == log.contract.owner_id:
+            output = None
+            if log.output != None:
+                output = {
+                    "error" : log.error,
+                    "time_elapsed" : (log.end_time - log.time).total_seconds() if not log.running else None,
+                    "output" : json.loads(log.output) if not log.error else log.output,
+                }
             return js({
                 "error" : False,
+                "log_information" : {
+                    "in_progress" : log.running,
+                    "output" : output
+                }
                 
             })
         else:
@@ -159,6 +170,8 @@ def trader_run(instance_id):
         user = User.query.filter_by(public_key = auth['key']).first()
         instance = Costaverage.query.filter_by(instance_lookup=instance_id).first()
         if instance != None and user.id == instance.owner_id:
+            if verify_authorization(instance.instance_lookup,instance.source_account,instance.authorization)['error']:
+                return js({"error" : True, "error_message" : "bad_authorization"})
             if instance.running:
                 return js({"error" : True, "error_message" : "instance_already_running"})
             else:
