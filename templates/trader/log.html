@@ -196,11 +196,11 @@
         }
          var log_id = $("meta[name='log_id']").attr("content");  
         async function refresh(){
-            $("#refresh").hide()
             await axios.get('/api/log/trader/' + log_id).then(function(response){
                 if (!response.data.error){
                     $("#progress").html(!response.data.log_information.in_progress)
                     if(!response.data.log_information.in_progress){
+                     $("#refresh").hide()
 
                         $("#elapsed").html(secondsToHms(response.data.log_information.output.time_elapsed))
                         output_field = $("#output_field")
@@ -233,7 +233,6 @@
                     }
                 }
                 else{
-                    $("#refresh").show()
                 }
             })
             
