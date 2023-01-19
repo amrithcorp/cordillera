@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 other_config = {
     "horizon" : "https://horizon.stellar.org/",
-    "auth_server_key" : "SCR22UEX3XIGR3KLISV3QKWFH46EPJYI2JPRU7KUBTXA75GADFVENEO3",
+    "auth_server_key" : "--secret--key--",
     "worker_public_key" : "GBCPV3SCOKFJBSIM3JNLZVWEVEJVSADN4E3FFP3NVXLGA4K5QOKLA2ME",
     "domain" : "defiants.co",
     "auth_key" : "thisisthesecretkey"
@@ -14,7 +14,7 @@ app = Flask(__name__,instance_relative_config=False)
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://qtcoxuvx:U_Qo1gyQr3CcEcNrUbtdA3EZxkFqfJqO@peanut.db.elephantsql.com/qtcoxuvx"
+app.config['SQLALCHEMY_DATABASE_URI'] = "--db_uri--"
 
 db = SQLAlchemy(app)
 
